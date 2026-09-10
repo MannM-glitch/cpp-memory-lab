@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="See C++ from the inside. Interactive pointers, references, memory layout, cache locality and compiler optimization experiments."
+    />
+    <meta name="theme-color" content="#0b0f16" />
+    <title>C++ Memory Lab — See what your code does</title>
+    <link rel="stylesheet" href="style.css" />
+    <script type="module" src="app.js"></script>
+  </head>
+  <body>
+    <a class="skip" href="#lab">Skip to experiment</a>
+    <header class="masthead">
+      <a class="brand" href="./"
+        ><span class="brand-mark">C<span>++</span></span
+        ><span>MEMORY<span class="brand-light"> / LAB</span></span></a
+      ><span class="header-note">AN INTERACTIVE FIELD GUIDE</span
+      ><a
+        class="repo-link"
+        href="https://github.com/MannM-glitch/cpp-memory-lab"
+        >Source on GitHub ↗</a
+      >
+    </header>
+    <main>
+      <div class="intro">
+        <div>
+          <p class="eyebrow">BELOW THE ABSTRACTION</p>
+          <h1>See what your<br /><span>code actually does.</span></h1>
+        </div>
+        <p class="intro-note">
+          Turn invisible behavior into something you can inspect. Change the
+          code. Follow the bytes. Understand the tradeoffs.
+        </p>
+      </div>
+      <nav class="chapters" aria-label="Experiments">
+        <button data-lab="pointers" aria-current="page">
+          <span>01</span> Pointers & references <b>↗</b>
+        </button>
+        <button data-lab="layout">
+          <span>02</span> Memory layout <b>↗</b>
+        </button>
+        <button data-lab="cache">
+          <span>03</span> Cache locality <b>↗</b>
+        </button>
+        <button data-lab="compiler">
+          <span>04</span> Compiler lens <b>↗</b>
+        </button>
+      </nav>
+      <section id="lab" aria-labelledby="lab-title"></section>
+      <section class="principle">
+        <span class="eyebrow">THE BIG IDEA</span>
+        <p id="principle-text">
+          A pointer stores an address. A reference gives an existing object
+          another name.
+        </p>
+      </section>
+      <footer>
+        <span>C++20 · Interactive conceptual models</span
+        ><span>No installs. No tracking. Just experiments.</span
+        ><a
+          href="https://github.com/MannM-glitch/cpp-memory-lab#accuracy-and-assumptions"
+          >Model notes & sources ↗</a
+        >
+      </footer>
+    </main>
+  </body>
+</html>

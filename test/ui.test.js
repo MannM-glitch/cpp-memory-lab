@@ -5,7 +5,7 @@ import { parseHTML } from "linkedom";
 
 test("all four experiment controls update their rendered results", async () => {
   const { document, window } = parseHTML(
-    await readFile(new URL("../dist/index.html", import.meta.url), "utf8"),
+    await readFile(new URL("../dist/advanced.html", import.meta.url), "utf8"),
   );
   globalThis.document = document;
   globalThis.location = { hash: "" };

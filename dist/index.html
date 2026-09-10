@@ -2,68 +2,59 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta
       name="description"
-      content="See C++ from the inside. Interactive pointers, references, memory layout, cache locality and compiler optimization experiments."
+      content="Four playful animated stories that make C++ memory click."
     />
-    <meta name="theme-color" content="#0b0f16" />
-    <title>C++ Memory Lab — See what your code does</title>
-    <link rel="stylesheet" href="style.css" />
-    <script type="module" src="app.js"></script>
+    <title>Little Memory Adventures</title>
+    <link rel="stylesheet" href="story.css" />
+    <script type="module" src="story.js"></script>
   </head>
   <body>
-    <a class="skip" href="#lab">Skip to experiment</a>
-    <header class="masthead">
-      <a class="brand" href="./"
-        ><span class="brand-mark">C<span>++</span></span
-        ><span>MEMORY<span class="brand-light"> / LAB</span></span></a
-      ><span class="header-note">AN INTERACTIVE FIELD GUIDE</span
-      ><a
-        class="repo-link"
-        href="https://github.com/MannM-glitch/cpp-memory-lab"
-        >Source on GitHub ↗</a
-      >
+    <header>
+      <a href="./" class="brand">✳ little memory adventures</a
+      ><a href="https://github.com/MannM-glitch/cpp-memory-lab">GitHub ↗</a>
     </header>
     <main>
       <div class="intro">
-        <div>
-          <p class="eyebrow">BELOW THE ABSTRACTION</p>
-          <h1>See what your<br /><span>code actually does.</span></h1>
-        </div>
-        <p class="intro-note">
-          Turn invisible behavior into something you can inspect. Change the
-          code. Follow the bytes. Understand the tradeoffs.
-        </p>
+        <span class="eyebrow">BIG IDEAS. TINY ADVENTURES.</span>
+        <h1>A little less code.<br />A lot more <em>aha!</em></h1>
+        <p>Meet the ideas inside C++ through four little moving stories.</p>
       </div>
-      <nav class="chapters" aria-label="Experiments">
-        <button data-lab="pointers" aria-current="page">
-          <span>01</span> Pointers & references <b>↗</b>
-        </button>
-        <button data-lab="layout">
-          <span>02</span> Memory layout <b>↗</b>
-        </button>
-        <button data-lab="cache">
-          <span>03</span> Cache locality <b>↗</b>
-        </button>
-        <button data-lab="compiler">
-          <span>04</span> Compiler lens <b>↗</b>
-        </button>
+      <nav aria-label="Choose a story">
+        <button data-story="pointers">👉 Follow the friend</button
+        ><button data-story="layout">🧳 Pack the space</button
+        ><button data-story="cache">🍪 Grab a batch</button
+        ><button data-story="compiler">✨ Skip the busywork</button>
       </nav>
-      <section id="lab" aria-labelledby="lab-title"></section>
-      <section class="principle">
-        <span class="eyebrow">THE BIG IDEA</span>
-        <p id="principle-text">
-          A pointer stores an address. A reference gives an existing object
-          another name.
-        </p>
+      <section class="theater" aria-labelledby="story-title">
+        <div class="story-heading">
+          <span id="chapter"></span><span id="step-count"></span>
+        </div>
+        <h2 id="story-title"></h2>
+        <div id="stage" role="img"></div>
+        <div class="caption" role="status" aria-live="polite">
+          <h3 id="caption-title"></h3>
+          <p id="caption-text"></p>
+        </div>
+        <div class="playback">
+          <button id="back" aria-label="Previous scene">←</button
+          ><button id="play" class="primary">▶ Play story</button
+          ><button id="next" aria-label="Next scene">→</button
+          ><button id="replay">↺ Restart</button>
+        </div>
+        <div class="progress" id="progress" aria-label="Story progress"></div>
       </section>
+      <details>
+        <summary>Connect it to C++</summary>
+        <p id="connection"></p>
+        <a id="deep-link" href="advanced.html">Open the detailed lab →</a>
+      </details>
       <footer>
-        <span>C++20 · Interactive conceptual models</span
-        ><span>No installs. No tracking. Just experiments.</span
-        ><a
-          href="https://github.com/MannM-glitch/cpp-memory-lab#accuracy-and-assumptions"
-          >Model notes & sources ↗</a
+        Little stories, real ideas. The pictures are simplified models.<a
+          href="advanced.html"
+          >For the curious: the original lab ↗</a
         >
       </footer>
     </main>
