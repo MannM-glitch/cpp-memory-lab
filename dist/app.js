@@ -1,4 +1,4 @@
-import { pointerSteps, fields, structLayout, cacheTrace } from './model.js';
+import { pointerSteps, fields, structLayout, cacheTrace, transformations } from './model.js';
 const $ = (selector) => document.querySelector(selector);
 const lab = $('#lab');
 const escape = (s) => String(s).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
@@ -25,6 +25,24 @@ function pointers() {
   $('#reset').onclick = () => { stop(); step = 0; draw(); };
   $('#play').onclick = () => { if (timer) return stop(); if (step === pointerSteps.length - 1) step = 0; draw(); $('#play').textContent = 'Pause'; timer = setInterval(() => { step++; draw(); if (step === pointerSteps.length - 1) stop(); }, 1700); };
   cleanup = () => clearInterval(timer); draw();
+}
+function compiler() {
+  let example = 'fold';
+  lab.innerHTML = heading('Look through the compiler.', 'Explore legal rewrites and the assumptions that make them possible.', 'ILLUSTRATIVE · NOT LIVE COMPILATION') + `<div class="controls" style="padding-top:0"><label class="field">Transformation <select id="transformation">${Object.entries(transformations).map(([key, v]) => `<option value="${key}">${v.name}</option>`).join('')}</select></label></div><div class="pipeline"><span>C++ source</span>→<span class="selected">Optimization reasoning</span>→<span>Target machine code</span></div><div class="compiler-panels"><div><div class="pane-title"><strong id="compiler-file"></strong><span>BEFORE</span></div><div id="source-code"></div></div><div><div class="pane-title"><strong>Equivalent behavior</strong><span id="rewrite-label">AFTER · PSEUDO-C++</span></div><div id="optimized-code"></div></div></div><div class="controls"><label class="field" id="numeric-field">Input x <input id="compiler-input" type="range" min="0" max="100" value="24"><output id="input-value">24</output></label><label class="field hidden" id="alias-field"><input id="alias-input" type="checkbox"> a and b point to the same int</label></div><div class="result-row" role="status" aria-live="polite"><p>Original result <output id="result-original"></output></p><p>Preserved result <output id="result-rewritten"></output></p></div><p class="mini-note" style="margin-bottom:20px">32-bit unsigned model for arithmetic examples. Results are calculated locally; no compiler runs in this page. Generate real assembly with the C++ examples in the repo.</p>${notice()}`;
+  function draw() {
+    const t = transformations[example], x = Number($('#compiler-input').value), aliases = $('#alias-input').checked;
+    $('#compiler-file').textContent = t.file;
+    $('#source-code').innerHTML = codeBlock(t.source);
+    $('#optimized-code').innerHTML = codeBlock(t.optimized);
+    $('#rewrite-label').textContent = example === 'alias' ? 'DEPENDENCY TO PRESERVE' : 'AFTER · PSEUDO-C++';
+    $('#numeric-field').classList.toggle('hidden', example === 'alias'); $('#alias-field').classList.toggle('hidden', example !== 'alias');
+    $('#input-value').textContent = x;
+    $('#result-original').textContent = t.run(x, aliases); $('#result-rewritten').textContent = t.rewritten(x, aliases);
+    $('#explanation').innerHTML = `<strong>${t.title}</strong>${t.text}`;
+    $('#principle-text').textContent = t.principle;
+  }
+  $('#transformation').onchange = () => { example = $('#transformation').value; draw(); };
+  $('#compiler-input').oninput = draw; $('#alias-input').onchange = draw; draw();
 }
 function layout() {
   let order = ['tag', 'value', 'count'];
@@ -70,11 +88,12 @@ const lessons = {
   pointers: { render: pointers, principle: 'A pointer stores an address. A reference gives an existing object another name.' },
   layout: { render: layout, principle: 'Memory efficiency starts with layout. Measure sizeof and alignment on your actual target before changing a data structure.' },
   cache: { render: cache, principle: 'Contiguous access can turn one memory fetch into several useful reads. Data layout and traversal order work together.' },
+  compiler: { render: compiler, principle: transformations.fold.principle },
 };
 function navigate(id) {
   if (!lessons[id]) id = 'pointers'; cleanup(); cleanup = () => {};
   document.querySelectorAll('[data-lab]').forEach(b => { if (b.dataset.lab === id) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
-  lessons[id].render(); $('#principle-text').textContent = lessons[id].principle;
+  $('#principle-text').textContent = lessons[id].principle; lessons[id].render();
 }
 document.querySelectorAll('[data-lab]').forEach(button => button.onclick = () => { location.hash = button.dataset.lab; });
 addEventListener('hashchange', () => navigate(location.hash.slice(1)));

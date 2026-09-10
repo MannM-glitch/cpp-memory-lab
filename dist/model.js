@@ -47,3 +47,46 @@ export function cacheTrace(mode = 'row') {
   }
   return trace;
 }
+
+export const transformations = {
+  fold: {
+    name: 'Constant folding', file: 'constant_folding.cpp',
+    source: ['unsigned compute(unsigned x) {', '  unsigned scale = 3u * 4u;', '  return x + scale;', '}'],
+    optimized: ['unsigned compute(unsigned x) {', '  return x + 12u;', '}'],
+    title: 'Compute what is already known.',
+    text: 'The constant expression 3u * 4u can become 12u before execution. This source-level rewrite illustrates the idea; even an unoptimized build may fold constants.',
+    principle: 'An optimizer preserves observable behavior while choosing a different implementation. Source expressions do not map one-to-one to instructions.',
+    run: x => (x + 12) >>> 0,
+    rewritten: x => (x + 3 * 4) >>> 0,
+  },
+  dead: {
+    name: 'Dead store elimination', file: 'dead_store.cpp',
+    source: ['unsigned compute(unsigned x) {', '  unsigned result = x * 9u;', '  result = x + 1u;', '  return result;', '}'],
+    optimized: ['unsigned compute(unsigned x) {', '  return x + 1u;', '}'],
+    title: 'Remove work whose result is never used.',
+    text: 'The first value of result is overwritten before any read. These unsigned arithmetic operations have no observable side effects. Volatile writes, I/O, and other side effects cannot simply be discarded.',
+    principle: 'A benchmark can time nothing if its result is unobserved. Check generated code and use a benchmark harness that prevents unwanted elimination.',
+    run: x => { let result = Math.imul(x, 9) >>> 0; result = (x + 1) >>> 0; return result; },
+    rewritten: x => (x + 1) >>> 0,
+  },
+  strength: {
+    name: 'Strength reduction', file: 'strength_reduction.cpp',
+    source: ['unsigned compute(unsigned x) {', '  return x * 8u;', '}'],
+    optimized: ['unsigned compute(unsigned x) {', '  return x << 3;', '}'],
+    title: 'Express the same operation another way.',
+    text: 'For the illustrated 32-bit unsigned type, both forms wrap modulo 2³². A compiler may use a shift, an addressing instruction, or another sequence. A shift is not a universal speedup; let target-specific cost models decide.',
+    principle: 'Readable code gives the compiler room to choose. Inspect and measure before replacing clear arithmetic with manual tricks.',
+    run: x => Math.imul(x, 8) >>> 0,
+    rewritten: x => (x << 3) >>> 0,
+  },
+  alias: {
+    name: 'Aliasing barrier', file: 'aliasing.cpp',
+    source: ['int update(int* a, int* b) {', '  *a = 1;', '  *b = 2;', '  return *a;', '}'],
+    optimized: ['// Cannot always return 1:', '// a and b may point to one int.', '*a = 1;', '*b = 2;', 'return *a; // keep the dependency'],
+    title: 'What if both addresses name the same object?',
+    text: 'With distinct objects the result is 1; when a == b the result is 2. Both pointers have the same type, so type-based alias analysis cannot assume they are independent. References can alias too.',
+    principle: 'Optimization depends on what the compiler can prove. Replacing a pointer parameter with a reference does not promise non-aliasing.',
+    run: (_, alias) => alias ? 2 : 1,
+    rewritten: (_, alias) => alias ? 2 : 1,
+  },
+};
