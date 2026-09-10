@@ -1,4 +1,4 @@
-import { pointerSteps } from './model.js';
+import { pointerSteps, fields, structLayout, cacheTrace } from './model.js';
 const $ = (selector) => document.querySelector(selector);
 const lab = $('#lab');
 const escape = (s) => String(s).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
@@ -26,8 +26,50 @@ function pointers() {
   $('#play').onclick = () => { if (timer) return stop(); if (step === pointerSteps.length - 1) step = 0; draw(); $('#play').textContent = 'Pause'; timer = setInterval(() => { step++; draw(); if (step === pointerSteps.length - 1) stop(); }, 1700); };
   cleanup = () => clearInterval(timer); draw();
 }
+function layout() {
+  let order = ['tag', 'value', 'count'];
+  lab.innerHTML = heading('Make every byte count.', 'Reorder the same fields. See alignment and padding change.', 'ILLUSTRATIVE 64-BIT ABI') + `<div class="workspace"><div class="editor"><div class="pane-title"><strong>layout.cpp</strong><span>sizeof & alignof</span></div><div id="layout-code"></div><div class="controls" style="padding:0 20px 20px"><button id="reorder" class="primary">Pack by alignment →</button><button id="layout-reset">Original order</button></div><p class="editor-note">Members keep their alignment. Reordering removes padding without using packed structs.</p></div><div class="canvas"><div class="pane-title"><strong>Byte map</strong><span>Each tile = 1 byte</span></div><div class="viz-pad"><div id="layout-metrics" class="metrics"></div><div class="byte-label">OFFSET · 8 BYTES PER ROW</div><div id="byte-grid" class="byte-grid" role="img"></div><div class="mini-note">t = tag · v = value · c = count · — = padding</div></div></div></div><div class="controls"><label class="field">Object count <input id="count" type="range" min="1" max="100000" value="10000" step="1"><output id="count-value">10,000</output></label></div>${notice()}`;
+  function draw() {
+    const s = structLayout(order), count = Number($('#count').value);
+    $('#layout-code').innerHTML = codeBlock(['struct Record {', ...order.map(k => `  ${fields[k].type} ${k};`), '};', '', `// sizeof(Record): ${s.size} bytes`, `// alignof(Record): ${s.alignment} bytes`]);
+    $('#layout-metrics').innerHTML = `<div class="metric"><b>${s.size}<small> B</small></b><small>Object size</small></div><div class="metric"><b>${s.padding}<small> B</small></b><small>Padding</small></div><div class="metric"><b>${Math.round(13 / s.size * 100)}<small>%</small></b><small>Payload / size</small></div>`;
+    $('#byte-grid').innerHTML = s.bytes.map(b => `<div class="byte ${b.css}" aria-hidden="true">${b.offset}<br>${b.name === 'padding' ? '—' : b.name[0]}</div>`).join('');
+    $('#byte-grid').setAttribute('aria-label', `${s.size}-byte object: ${s.members.map(m => `${m.name} occupies bytes ${m.offset} to ${m.offset + m.size - 1}`).join('; ')}. ${s.padding} padding bytes total.`);
+    $('#count-value').textContent = count.toLocaleString();
+    $('#explanation').innerHTML = `<strong>${order[0] === 'value' ? 'Same payload. Eight fewer bytes per object.' : '13 bytes of fields occupy 24 bytes.'}</strong>${count.toLocaleString()} objects use ${(s.size * count).toLocaleString()} bytes of element storage. Reordering to double → int → char ${s.size === 16 ? 'saves' : 'would save'} ${(8 * count).toLocaleString()} bytes (33.3%). Sizes exclude allocator overhead and container capacity.`;
+    $('#reorder').disabled = order[0] === 'value'; $('#layout-reset').disabled = order[0] === 'tag';
+  }
+  $('#reorder').onclick = () => { order = ['value', 'count', 'tag']; draw(); };
+  $('#layout-reset').onclick = () => { order = ['tag', 'value', 'count']; draw(); };
+  $('#count').oninput = draw; draw();
+}
+function cache() {
+  let mode = 'row', position = -1, timer, trace = cacheTrace(mode);
+  lab.innerHTML = heading('Access order changes the story.', 'Traverse one matrix in two ways. Watch cache lines fill and leave.', 'DETERMINISTIC CACHE MODEL') + `<div class="controls" style="padding-top:0"><div class="segmented" aria-label="Traversal"><button id="row" aria-pressed="true">Row first</button><button id="column" aria-pressed="false">Column first</button></div></div><div class="workspace"><div class="editor"><div class="pane-title"><strong>traversal.cpp</strong><span>int matrix[8][8]</span></div><div id="cache-code"></div><p class="editor-note">Model: 16-byte cache lines, 4 lines of capacity, fully associative LRU. Aligned matrix, cold cache, no prefetch. Real hardware differs.</p><div class="viz-pad"><div id="cache-metrics" class="metrics"></div><div id="cache-summary" class="mini-note"></div></div></div><div class="canvas"><div class="pane-title"><strong>8 × 8 row-major matrix</strong><span>Each tile = 4-byte int</span></div><div class="viz-pad"><div class="byte-label">COLUMN → · ROW ↓</div><div class="cache-grid" id="cache-grid" role="img"></div><div class="legend" style="padding:0"><span>Resident in cache</span><span>Visited (green)</span></div><p class="mini-note">Numbers are element indices. An outlined cell is the current read. Visited cells can be evicted from cache.</p></div></div></div><div class="controls"><button class="primary" id="cache-next">Read next →</button><button id="cache-play">Play</button><button id="cache-finish">Run to end</button><button id="cache-reset">Reset</button><span class="step-label" id="cache-step"></span></div>${notice()}`;
+  function stop() { clearInterval(timer); timer = null; $('#cache-play').textContent = 'Play'; }
+  function draw() {
+    const s = trace[position], visited = new Set(trace.slice(0, position + 1).map(s => s.index));
+    $('#cache-code').innerHTML = codeBlock(['int matrix[8][8] = {};', 'int sum = 0;', `for (int ${mode === 'row' ? 'r' : 'c'} = 0; ${mode === 'row' ? 'r' : 'c'} < 8; ++${mode === 'row' ? 'r' : 'c'})`, `  for (int ${mode === 'row' ? 'c' : 'r'} = 0; ${mode === 'row' ? 'c' : 'r'} < 8; ++${mode === 'row' ? 'c' : 'r'})`, '    sum += matrix[r][c];'], s ? 4 : -1);
+    $('#cache-grid').innerHTML = Array.from({ length: 64 }, (_, i) => `<div aria-hidden="true" class="cache-cell ${s?.cache.includes(Math.floor(i / 4)) ? 'loaded' : ''} ${visited.has(i) ? 'visited' : ''} ${i === s?.index ? 'current' : ''}">${i}</div>`).join('');
+    $('#cache-grid').setAttribute('aria-label', s ? `Read row ${s.row}, column ${s.col}, element ${s.index}: cache ${s.hit ? 'hit' : 'miss'}. Resident cache lines: ${s.cache.join(', ')}.` : '64 elements in row-major storage; cache is empty.');
+    $('#cache-metrics').innerHTML = `<div class="metric"><b>${s?.hits ?? 0}</b><small>Hits</small></div><div class="metric"><b>${s?.misses ?? 0}</b><small>Misses</small></div><div class="metric"><b>${s ? Math.round(s.hits / (position + 1) * 100) : 0}<small>%</small></b><small>Hit rate</small></div>`;
+    $('#cache-summary').textContent = `Full traversal in this model: row first = 16 misses; column first = 64 misses. Miss counts are not execution times.`;
+    $('#cache-step').textContent = `READ ${position + 1} / 64`;
+    $('#cache-next').disabled = $('#cache-finish').disabled = position === 63;
+    $('#explanation').innerHTML = s ? `<strong>${s.hit ? 'HIT · The line is already resident.' : 'MISS · Fetch four neighboring ints.'}</strong>matrix[${s.row}][${s.col}] is element ${s.index}, byte offset ${s.index * 4}. Its line spans elements ${s.line * 4}–${s.line * 4 + 3}. ${s.hit ? 'This read reuses an earlier fetch.' : 'If all four cache slots are occupied, evict the least recently used line.'}` : '<strong>Start with an empty cache.</strong>Each fetch brings in four adjacent ints. Row-first access uses those neighbors immediately; column-first access jumps across rows.';
+  }
+  function restart(newMode = mode) { stop(); mode = newMode; position = -1; trace = cacheTrace(mode); $('#row').setAttribute('aria-pressed', mode === 'row'); $('#column').setAttribute('aria-pressed', mode === 'column'); draw(); }
+  $('#row').onclick = () => restart('row'); $('#column').onclick = () => restart('column');
+  $('#cache-next').onclick = () => { stop(); position++; draw(); };
+  $('#cache-finish').onclick = () => { stop(); position = 63; draw(); };
+  $('#cache-reset').onclick = () => restart();
+  $('#cache-play').onclick = () => { if (timer) return stop(); if (position === 63) position = -1; $('#cache-play').textContent = 'Pause'; timer = setInterval(() => { position++; draw(); if (position === 63) stop(); }, 220); };
+  cleanup = () => clearInterval(timer); draw();
+}
 const lessons = {
   pointers: { render: pointers, principle: 'A pointer stores an address. A reference gives an existing object another name.' },
+  layout: { render: layout, principle: 'Memory efficiency starts with layout. Measure sizeof and alignment on your actual target before changing a data structure.' },
+  cache: { render: cache, principle: 'Contiguous access can turn one memory fetch into several useful reads. Data layout and traversal order work together.' },
 };
 function navigate(id) {
   if (!lessons[id]) id = 'pointers'; cleanup(); cleanup = () => {};
