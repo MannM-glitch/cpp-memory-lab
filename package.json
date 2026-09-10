@@ -4,6 +4,18 @@
   "private": true,
   "type": "module",
   "description": "Interactive C++ pointers, references, memory and compiler optimization lab",
-  "scripts": { "start": "node scripts/serve.mjs", "test": "node --test", "check": "node --check dist/app.js && node --check dist/model.js" },
-  "engines": { "node": ">=22" }
+  "scripts": {
+    "start": "node scripts/serve.mjs",
+    "test": "node --test",
+    "check": "node --check dist/app.js && node --check dist/model.js",
+    "format": "prettier --write dist scripts test .github README.md package.json",
+    "format:check": "prettier --check dist scripts test .github README.md package.json"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "linkedom": "0.18.13",
+    "prettier": "3.6.2"
+  }
 }

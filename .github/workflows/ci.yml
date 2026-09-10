@@ -1,0 +1,39 @@
+name: Validate lab
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  javascript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm test
+  cpp:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        optimization: ["0", "2", "3"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile and run semantic checks
+        run: |
+          mkdir -p build
+          g++ --version
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -O${{ matrix.optimization }} examples/experiments.cpp -o build/experiments
+          ./build/experiments
+      - name: Emit real assembly and vectorization diagnostics
+        run: g++ -std=c++20 -O${{ matrix.optimization }} -S -masm=intel -fopt-info-vec-all=build/vectorization.txt examples/experiments.cpp -o build/experiments.s
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gcc-O${{ matrix.optimization }}-assembly
+          path: |
+            build/experiments.s
+            build/vectorization.txt
