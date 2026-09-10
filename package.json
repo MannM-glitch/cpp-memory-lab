@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node scripts/serve.mjs",
     "test": "node --test",
-    "check": "node --check dist/app.js && node --check dist/model.js",
+    "check": "node --check dist/app.js && node --check dist/model.js && node --check dist/story.js",
     "format": "prettier --write dist scripts test .github README.md package.json",
     "format:check": "prettier --check dist scripts test .github README.md package.json"
   },

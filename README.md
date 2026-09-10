@@ -1,5 +1,7 @@
 # C++ Memory Lab
 
+The default experience is now **Little Memory Adventures**: four playful animated stories, with Play/Pause, stepping, and replay. Follow a friend, pack space, grab cookies in a batch, and skip busywork. Plain-language captions lead; C++ explanations are tucked into an expandable section. The original technical experiments remain available at [the detailed lab](https://MannM-glitch.github.io/cpp-memory-lab/advanced.html).
+
 **See what your code actually does.** An interactive field guide to C++ pointers, references, data layout, cache locality, and compiler optimization.
 
 [Open the lab](https://MannM-glitch.github.io/cpp-memory-lab/) · [Validation runs](https://github.com/MannM-glitch/cpp-memory-lab/actions/workflows/ci.yml) · [Runnable C++](examples/experiments.cpp)
