@@ -119,6 +119,7 @@ export function cacheTrace(mode = "row") {
       const index = row * 8 + col,
         line = Math.floor(index / 4),
         hit = cache.includes(line);
+      const evicted = !hit && cache.length === 4 ? cache[0] : null;
       if (!hit) misses++;
       cache = cache.filter((l) => l !== line);
       cache.push(line);
@@ -129,6 +130,7 @@ export function cacheTrace(mode = "row") {
         index,
         line,
         hit,
+        evicted,
         cache: [...cache],
         misses,
         hits: trace.length + 1 - misses,

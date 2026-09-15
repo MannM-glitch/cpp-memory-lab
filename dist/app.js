@@ -186,7 +186,7 @@ function cache() {
       "Traverse one matrix in two ways. Watch cache lines fill and leave.",
       "DETERMINISTIC CACHE MODEL",
     ) +
-    `<div class="controls" style="padding-top:0"><div class="segmented" aria-label="Traversal"><button id="row" aria-pressed="true">Row first</button><button id="column" aria-pressed="false">Column first</button></div></div><div class="workspace"><div class="editor"><div class="pane-title"><strong>traversal.cpp</strong><span>int matrix[8][8]</span></div><div id="cache-code"></div><p class="editor-note">Model: 16-byte cache lines, 4 lines of capacity, fully associative LRU. Aligned matrix, cold cache, no prefetch. Real hardware differs.</p><div class="viz-pad"><div id="cache-metrics" class="metrics"></div><div id="cache-summary" class="mini-note"></div></div></div><div class="canvas"><div class="pane-title"><strong>8 × 8 row-major matrix</strong><span>Each tile = 4-byte int</span></div><div class="viz-pad"><div class="byte-label">COLUMN → · ROW ↓</div><div class="cache-grid" id="cache-grid" role="img"></div><div class="legend cache-legend" style="padding:0"><span>Resident in cache</span><span>Visited</span></div><p class="mini-note">Numbers are element indices. An outlined cell is the current read. Visited cells can be evicted from cache.</p></div></div></div><div class="controls"><button class="primary" id="cache-next">Read next →</button><button id="cache-play">Play</button><button id="cache-finish">Run to end</button><button id="cache-reset">Reset</button><span class="step-label" id="cache-step"></span></div>${notice()}`;
+    `<div class="controls" style="padding-top:0"><div class="segmented" aria-label="Traversal"><button id="row" aria-pressed="true">Row first</button><button id="column" aria-pressed="false">Column first</button></div></div><div class="workspace"><div class="editor"><div class="pane-title"><strong>traversal.cpp</strong><span>int matrix[8][8]</span></div><div id="cache-code"></div><p class="editor-note">Model: 16-byte cache lines, 4 lines of capacity, fully associative LRU. Aligned matrix, cold cache, no prefetch. Real hardware differs.</p><div class="viz-pad"><div id="cache-metrics" class="metrics"></div><div id="cache-summary" class="mini-note"></div></div></div><div class="canvas"><div class="pane-title"><strong>8 × 8 row-major matrix</strong><span>Each tile = 4-byte int</span></div><div class="viz-pad"><div class="byte-label">COLUMN → · ROW ↓</div><div class="cache-grid" id="cache-grid" role="img"></div><h3 class="cache-tray-title">What is in the cache right now?</h3><p class="mini-note">Four spaces. Each holds a group of four elements.</p><div id="cache-tray" class="cache-tray"></div><div class="legend cache-legend" style="padding:0"><span>Blue = cached now</span><span>✓ = already read</span><span>Orange = just removed</span></div><p class="mini-note">The outline marks the current read. A checkmark stays after reading; blue disappears when a group leaves the cache. The matrix itself is never deleted.</p></div></div></div><div class="controls"><button class="primary" id="cache-next">Read next →</button><button id="cache-play">Play</button><button id="cache-finish">Run to end</button><button id="cache-example">Show 44–47 leaving</button><button id="cache-reset">Reset</button><span class="step-label" id="cache-step"></span></div>${notice()}`;
   function stop() {
     clearInterval(timer);
     timer = null;
@@ -208,7 +208,7 @@ function cache() {
     $("#cache-grid").innerHTML = Array.from(
       { length: 64 },
       (_, i) =>
-        `<div aria-hidden="true" class="cache-cell ${s?.cache.includes(Math.floor(i / 4)) ? "loaded" : ""} ${visited.has(i) ? "visited" : ""} ${i === s?.index ? "current" : ""}">${i}</div>`,
+        `<div aria-hidden="true" class="cache-cell ${s?.cache.includes(Math.floor(i / 4)) ? "loaded" : ""} ${visited.has(i) ? "visited" : ""} ${s?.evicted != null && Math.floor(i / 4) === s.evicted ? "evicted" : ""} ${i === s?.index ? "current" : ""}">${i}<span class="read-mark">${visited.has(i) ? "✓" : "·"}</span></div>`,
     ).join("");
     $("#cache-grid").setAttribute(
       "aria-label",
@@ -222,9 +222,18 @@ function cache() {
       `Full traversal in this model: row first = 16 misses; column first = 64 misses. Miss counts are not execution times.`;
     $("#cache-step").textContent = `READ ${position + 1} / 64`;
     $("#cache-next").disabled = $("#cache-finish").disabled = position === 63;
-    $("#explanation").innerHTML = s
-      ? `<strong>${s.hit ? "HIT · The line is already resident." : "MISS · Fetch four neighboring ints."}</strong>matrix[${s.row}][${s.col}] is element ${s.index}, byte offset ${s.index * 4}. Its line spans elements ${s.line * 4}–${s.line * 4 + 3}. ${s.hit ? "This read reuses an earlier fetch." : "If all four cache slots are occupied, evict the least recently used line."}`
-      : "<strong>Start with an empty cache.</strong>Each fetch brings in four adjacent ints. Row-first access uses those neighbors immediately; column-first access jumps across rows.";
+    const range = (line) => `${line * 4}–${line * 4 + 3}`;
+    $("#cache-tray").innerHTML = Array.from({ length: 4 }, (_, i) => {
+      const line = s?.cache[i];
+      return `<div class="cache-slot"><small>${line === undefined ? "Empty space" : i === 0 ? "Least recently used" : i === s.cache.length - 1 ? "Most recently used" : "Cached group"}</small><b>${line === undefined ? "—" : range(line)}</b></div>`;
+    }).join("");
+    $("#explanation").innerHTML = !s
+      ? "<strong>The cache starts empty.</strong>Read an element to bring its group of four into one cache space."
+      : s.hit
+        ? `<strong>Already here: ${range(s.line)}.</strong>Reading element ${s.index} reuses this cached group. Nothing is removed. This group becomes the most recently used.`
+        : s.evicted === null
+          ? `<strong>Bring in ${range(s.line)}. Nothing leaves yet.</strong>Element ${s.index} needs this group of four. There is an empty cache space, so no eviction is needed.`
+          : `<strong>OUT: ${range(s.evicted)} → IN: ${range(s.line)}</strong>Reading element ${s.index} brings in ${range(s.line)}. All four spaces were full, so ${range(s.evicted)} leaves: it was the group unused for the longest time. Only its cached copy is removed; the original elements stay in the matrix.`;
   }
   function restart(newMode = mode) {
     stop();
@@ -248,6 +257,11 @@ function cache() {
     draw();
   };
   $("#cache-reset").onclick = () => restart();
+  $("#cache-example").onclick = () => {
+    restart("row");
+    position = 60;
+    draw();
+  };
   $("#cache-play").onclick = () => {
     if (timer) return stop();
     if (position === 63) position = -1;

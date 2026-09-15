@@ -41,6 +41,10 @@ test("cache traversal reuses rows and evicts columns under explicit LRU capacity
   const row = cacheTrace("row"),
     column = cacheTrace("column");
   assert.equal(row.at(-1).misses, 16);
+  assert.equal(row[60].evicted, 11);
+  assert.deepEqual(row[60].cache, [12, 13, 14, 15]);
+  assert.equal(row[61].evicted, null);
+  assert.equal(row[0].evicted, null);
   assert.equal(row.at(-1).hits, 48);
   assert.equal(column.at(-1).misses, 64);
   assert.equal(column.at(-1).hits, 0);

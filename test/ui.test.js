@@ -37,6 +37,15 @@ test("all four experiment controls update their rendered results", async () => {
   assert.equal(document.querySelectorAll(".byte").length, 24);
 
   go("cache");
+  $("#cache-example").onclick();
+  assert.match($("#explanation").textContent, /OUT: 44–47 → IN: 60–63/);
+  assert.equal(document.querySelectorAll(".cache-cell.evicted").length, 4);
+  assert.equal(document.querySelectorAll(".cache-cell.loaded").length, 16);
+  assert.match($("#cache-tray").textContent, /48–51/);
+  assert.doesNotMatch($("#cache-tray").textContent, /44–47/);
+  $("#cache-next").onclick();
+  assert.match($("#explanation").textContent, /Nothing is removed/);
+  assert.equal(document.querySelectorAll(".cache-cell.evicted").length, 0);
   $("#cache-finish").onclick();
   assert.match($("#cache-metrics").textContent, /48Hits16Misses75%/);
   $("#column").onclick();

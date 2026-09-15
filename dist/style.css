@@ -522,8 +522,45 @@ code {
   color: var(--blue);
 }
 .cache-cell.visited {
-  background: #c7f47925;
+  font-weight: 500;
+}
+.read-mark {
+  display: block;
+  font-size: 11px;
   color: var(--lime);
+  min-height: 14px;
+}
+.cache-cell.evicted {
+  background: #ffb88a25;
+  color: var(--orange);
+}
+.cache-tray-title {
+  font-size: 16px;
+  margin: 18px 0 0;
+}
+.cache-tray {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px 0 18px;
+}
+.cache-slot {
+  border: 1px solid var(--blue);
+  border-radius: 7px;
+  padding: 10px;
+  background: var(--surface);
+}
+.cache-slot small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+.cache-slot b {
+  font: 20px var(--mono);
+  color: var(--blue);
+}
+.cache-legend span:nth-child(3):before {
+  background: var(--orange);
 }
 .cache-cell.current {
   outline: 2px solid var(--lime);
